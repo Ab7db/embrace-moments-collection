@@ -2,143 +2,246 @@
 @source "../src";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 /*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * ALABAD — cinematic photography portfolio design system.
+ * Single dark cinematic theme. All colors in oklch.
  */
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-soft: var(--accent-soft);
   --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--foreground);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--background);
+  --color-ring: var(--accent);
+
+  --font-display: "Bodoni Moda", "Noto Kufi Arabic", serif;
+  --font-sans: "Manrope", "Tajawal", system-ui, sans-serif;
+  --font-arabic-display: "Noto Kufi Arabic", "Bodoni Moda", serif;
+
+  --radius-lg: 2px;
+
+  --ease-cine: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-}
-
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --background: oklch(0.145 0 0);
+  --surface: oklch(0.205 0 0);
+  --surface-2: oklch(0.255 0 0);
+  --foreground: oklch(0.955 0.008 85);
+  --muted-foreground: oklch(0.7 0.004 85);
+  --accent: oklch(0.78 0.065 78);
+  --accent-soft: oklch(0.55 0.04 78);
+  --border: oklch(1 0 0 / 12%);
 }
 
 @layer base {
   * {
-    border-color: var(--color-border);
+    border-color: var(--border);
+  }
+
+  html {
+    background-color: var(--background);
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+    font-feature-settings: "ss01";
+  }
+
+  html[dir="rtl"] body {
+    font-family: "Tajawal", "Manrope", system-ui, sans-serif;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--background);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+  }
+
+  html[dir="rtl"] h1,
+  html[dir="rtl"] h2,
+  html[dir="rtl"] h3 {
+    font-family: var(--font-arabic-display);
+  }
+}
+
+/* ---------- Editorial type scale ---------- */
+
+@utility type-mega {
+  font-size: clamp(2.75rem, 13vw, 12rem);
+  line-height: 0.88;
+  letter-spacing: -0.02em;
+}
+
+@utility type-display {
+  font-size: clamp(2rem, 6.5vw, 5.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.015em;
+}
+
+@utility type-section {
+  font-size: clamp(1.5rem, 3.4vw, 3rem);
+  line-height: 1.05;
+}
+
+@utility type-meta {
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+}
+
+/* ---------- Photography treatments ---------- */
+
+@utility film-grain {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.16;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+@utility frame-photo {
+  overflow: hidden;
+  background-color: var(--surface);
+  & img {
+    transition: transform 1.2s var(--ease-cine), filter 1.2s var(--ease-cine);
+    will-change: transform;
+  }
+  &:hover img {
+    transform: scale(1.06);
+  }
+}
+
+@utility vignette {
+  background-image: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    oklch(0.145 0 0 / 0.75) 100%
+  );
+}
+
+@utility hairline-b {
+  border-bottom: 1px solid var(--border);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes aperture {
+  0% {
+    clip-path: circle(0% at 50% 50%);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: circle(85% at 50% 50%);
+    opacity: 1;
+  }
+}
+
+@keyframes light-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes scroll-hint {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+@keyframes marquee-up {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+@keyframes marquee-down {
+  from {
+    transform: translate3d(0, -50%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@utility animate-aperture {
+  animation: aperture 1.5s var(--ease-cine) forwards;
+}
+
+@utility animate-light-sweep {
+  animation: light-sweep 1.6s var(--ease-cine) forwards;
+}
+
+@utility animate-scroll-hint {
+  animation: scroll-hint 2.4s ease-in-out infinite;
+}
+
+@utility column-up {
+  animation: marquee-up var(--wall-duration, 70s) linear infinite;
+}
+
+@utility column-down {
+  animation: marquee-down var(--wall-duration, 70s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
