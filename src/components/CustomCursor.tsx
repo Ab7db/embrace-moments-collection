@@ -22,7 +22,7 @@ export function CustomCursor() {
       target.y = e.clientY;
       setVisible(true);
       const el = (e.target as HTMLElement)?.closest?.("[data-cursor]");
-      setLabel(el ? (el as HTMLElement).dataset.cursor || null : null);
+      setLabel(el ? (el as HTMLElement).dataset["cursor"] || null : null);
     };
     const leave = () => setVisible(false);
 
