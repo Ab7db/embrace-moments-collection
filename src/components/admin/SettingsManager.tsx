@@ -2,12 +2,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useState, useEffect } from "react";
 import type { DbSiteProfile, DbStat } from "@/lib/database.types";
-import { Save, User, BarChart3, Camera, Link as LinkIcon, CheckCircle2, RefreshCw } from "lucide-react";
+import { Save, User, BarChart3, Camera, Link as LinkIcon, CheckCircle2, RefreshCw, Sparkles, Sliders } from "lucide-react";
 import { ImageUpload } from "./ImageUpload";
 
 export function SettingsManager() {
   const queryClient = useQueryClient();
-  const [activeSubTab, setActiveSubTab] = useState<"profile" | "stats" | "gear" | "social">("profile");
+  const [activeSubTab, setActiveSubTab] = useState<"hero" | "profile" | "stats" | "gear" | "social">("hero");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Profile Query
@@ -74,7 +74,7 @@ export function SettingsManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["site_profile"] });
-      showNotification("تم حفظ البيانات الشخصية وصورة البروفايل بنجاح!");
+      showNotification("تم حفظ الإعدادات والصورة الرئيسية بنجاح!");
     },
     onError: (err: any) => {
       alert("خطأ أثناء حفظ البيانات: " + (err.message || "حدث خطأ"));
@@ -162,6 +162,19 @@ export function SettingsManager() {
       <div className="flex flex-wrap gap-2 border-b border-border pb-3">
         <button
           type="button"
+          onClick={() => setActiveSubTab("hero")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-sm type-meta text-xs transition-colors ${
+            activeSubTab === "hero"
+              ? "bg-accent text-background font-semibold"
+              : "text-muted-foreground hover:bg-surface hover:text-foreground"
+          }`}
+        >
+          <Sparkles className="h-4 w-4" />
+          الصورة الرئيسية وحركتها / Hero & Motion
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveSubTab("profile")}
           className={`flex items-center gap-2 px-4 py-2 rounded-sm type-meta text-xs transition-colors ${
             activeSubTab === "profile"
@@ -183,7 +196,7 @@ export function SettingsManager() {
           }`}
         >
           <BarChart3 className="h-4 w-4" />
-          الإحصائيات والأرقام / Stats (المشاريع، المدن، الحملات، المجتمع)
+          الإحصائيات والأرقام / Stats
         </button>
 
         <button
@@ -214,6 +227,206 @@ export function SettingsManager() {
       </div>
 
       <form onSubmit={handleSaveAll} className="space-y-6">
+        {/* TAB 0: Hero & Motion Settings */}
+        {activeSubTab === "hero" && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Hero Background Image */}
+            <div className="p-6 border border-border bg-surface/50 rounded-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="type-meta text-sm font-semibold text-foreground">
+                    الصورة الرئيسية في أعلى الموقع (Hero Background Image)
+                  </h3>
+                  <p className="type-meta text-xs text-muted-foreground mt-1">
+                    اختر أو ارفع الصورة التي تظهر كخلفية سينمائية في الواجهة الأولى للموقع.
+                  </p>
+                </div>
+              </div>
+
+              <ImageUpload
+                folder="hero"
+                value={profileForm.hero_image_url || ""}
+                onChange={(url: string) => setProfileForm((prev) => ({ ...prev, hero_image_url: url }))}
+                label="رفع / تغيير الصورة الرئيسية من الجهاز"
+                aspectRatio="video"
+              />
+            </div>
+
+            {/* Hero Motion & Parallax Settings */}
+            <div className="p-6 border border-border bg-surface/50 rounded-sm space-y-5">
+              <div>
+                <h3 className="type-meta text-sm font-semibold text-foreground">
+                  التحكم بحركة ومؤثرات الصورة الرئيسية (Hero Motion & Effects)
+                </h3>
+                <p className="type-meta text-xs text-muted-foreground mt-1">
+                  حدد نمط وسرعة حركة الصورة الرئيسية عند تحريك الماوس أو التمرير.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                {/* Motion Enabled Toggle */}
+                <div className="flex items-center justify-between p-4 border border-border bg-surface rounded-sm">
+                  <div>
+                    <label className="type-meta text-xs font-semibold text-foreground block">
+                      تفعيل حركة الصورة (Motion Active)
+                    </label>
+                    <span className="type-meta text-[11px] text-muted-foreground">
+                      تفعيل التفاعل الحركي ثلاثي الأبعاد مع الماوس والتمرير
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={profileForm.hero_motion_enabled ?? true}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        hero_motion_enabled: e.target.checked,
+                      }))
+                    }
+                    className="h-5 w-5 rounded border-border text-accent focus:ring-accent accent-accent cursor-pointer"
+                  />
+                </div>
+
+                {/* Motion Style */}
+                <div className="p-4 border border-border bg-surface rounded-sm">
+                  <label className="type-meta text-xs font-semibold text-foreground block mb-2">
+                    نمط الحركة (Motion Style)
+                  </label>
+                  <select
+                    value={profileForm.hero_motion_style || "parallax"}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        hero_motion_style: e.target.value,
+                      }))
+                    }
+                    className="w-full bg-background border border-border px-3 py-2 rounded-sm type-meta text-xs text-foreground focus:border-accent outline-none"
+                  >
+                    <option value="parallax">حركة بارالاكس تفاعلية مع الماوس (Interactive Parallax)</option>
+                    <option value="zoom-slow">تكبير سينمائي بطيء وهادئ (Cinematic Slow Zoom)</option>
+                    <option value="static">صورة ثابتة بدون حركة (Static Background)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Motion Intensity Slider */}
+              {(profileForm.hero_motion_enabled ?? true) && profileForm.hero_motion_style !== "static" && (
+                <div className="p-4 border border-border bg-surface rounded-sm space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="type-meta text-xs font-semibold text-foreground">
+                      شدة وسرعة الحركة (Motion Intensity): {profileForm.hero_motion_intensity ?? 18}px
+                    </label>
+                    <span className="type-meta text-[11px] text-accent font-medium">
+                      {(profileForm.hero_motion_intensity ?? 18) < 12
+                        ? "هادئ وخفيف"
+                        : (profileForm.hero_motion_intensity ?? 18) > 25
+                        ? "ديناميكي سريع"
+                        : "متوازن ومثالي"}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="4"
+                    max="40"
+                    step="2"
+                    value={profileForm.hero_motion_intensity ?? 18}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        hero_motion_intensity: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-accent cursor-pointer"
+                  />
+                  <div className="flex justify-between type-meta text-[10px] text-muted-foreground/60">
+                    <span>4px (خفيف جداً)</span>
+                    <span>18px (افتراضي متوازن)</span>
+                    <span>40px (حركة عميقة)</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Hero Headline & Rotating Titles */}
+            <div className="p-6 border border-border bg-surface/50 rounded-sm space-y-4">
+              <div>
+                <h3 className="type-meta text-sm font-semibold text-foreground">
+                  النصوص والعناوين الرئيسية في الواجهة (Hero Titles & Roles)
+                </h3>
+                <p className="type-meta text-xs text-muted-foreground mt-1">
+                  تخصيص العنوان العريض والمهام الدورية التي تتغير تلقائياً في الواجهة.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="type-meta text-xs text-muted-foreground block mb-1">
+                    العنوان الرئيسي (عربي)
+                  </label>
+                  <input
+                    type="text"
+                    name="hero_title_ar"
+                    placeholder="لكل مكان حكاية."
+                    value={profileForm.hero_title_ar || ""}
+                    onChange={handleProfileChange}
+                    className="w-full bg-background border border-border px-3 py-2 rounded-sm type-meta text-xs text-foreground focus:border-accent outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="type-meta text-xs text-muted-foreground block mb-1">
+                    العنوان الرئيسي (English)
+                  </label>
+                  <input
+                    type="text"
+                    name="hero_title_en"
+                    placeholder="In every place, there is a story."
+                    value={profileForm.hero_title_en || ""}
+                    onChange={handleProfileChange}
+                    className="w-full bg-background border border-border px-3 py-2 rounded-sm type-meta text-xs text-foreground focus:border-accent outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="type-meta text-xs text-muted-foreground block mb-1">
+                    الأدوار التعريفية المتغيرة بالعربية (مفصولة بفواصل)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="صانع بصري, مخرج إعلانات, مصور وثائقي"
+                    value={(profileForm.hero_roles_ar || []).join(", ")}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        hero_roles_ar: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                      }))
+                    }
+                    className="w-full bg-background border border-border px-3 py-2 rounded-sm type-meta text-xs text-foreground focus:border-accent outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="type-meta text-xs text-muted-foreground block mb-1">
+                    Rotating Roles in English (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Visual Storyteller, Commercial Director, Documentary Photographer"
+                    value={(profileForm.hero_roles_en || []).join(", ")}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        hero_roles_en: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                      }))
+                    }
+                    className="w-full bg-background border border-border px-3 py-2 rounded-sm type-meta text-xs text-foreground focus:border-accent outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TAB 1: Profile & Portrait Image */}
         {activeSubTab === "profile" && (
           <div className="space-y-6 animate-fade-in">

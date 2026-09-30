@@ -31,6 +31,16 @@ export interface Database {
           behance: string | null;
           twitter: string | null;
           youtube: string | null;
+          hero_image_url: string | null;
+          hero_motion_enabled: boolean | null;
+          hero_motion_intensity: number | null;
+          hero_motion_style: string | null;
+          hero_title_en: string | null;
+          hero_title_ar: string | null;
+          hero_subtitle_en: string | null;
+          hero_subtitle_ar: string | null;
+          hero_roles_en: string[] | null;
+          hero_roles_ar: string[] | null;
           created_at: string;
           updated_at: string;
         };

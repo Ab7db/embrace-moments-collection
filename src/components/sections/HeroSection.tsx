@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/lib/i18n";
 import { usePointerParallax, useReducedMotion } from "@/hooks/useMotionPrefs";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
+import type { DbSiteProfile } from "@/lib/database.types";
 import { media } from "@/data/media";
 import { social } from "@/data/social";
+import { formatImgUrl } from "@/lib/utils";
 
 export function HeroSection() {
   const { t, lang } = useLang();
@@ -10,12 +14,59 @@ export function HeroSection() {
   const pos = usePointerParallax(!reduced);
   const [loaded, setLoaded] = useState(false);
   const [roleIdx, setRoleIdx] = useState(0);
-  const rolesLen = t.hero.roles.length;
+
+  // Fetch live site profile for hero customization
+  const { data: profile } = useQuery<DbSiteProfile | null>({
+    queryKey: ["site_profile"],
+    queryFn: async () => {
+      const { data } = await supabase.from("site_profile").select("*").limit(1).maybeSingle();
+      return (data as DbSiteProfile) || null;
+    },
+  });
+
+  // Dynamic roles
+  const customRoles =
+    lang === "ar"
+      ? profile?.hero_roles_ar && profile.hero_roles_ar.length > 0
+        ? profile.hero_roles_ar
+        : t.hero.roles
+      : profile?.hero_roles_en && profile.hero_roles_en.length > 0
+      ? profile.hero_roles_en
+      : t.hero.roles;
+
+  const rolesLen = customRoles.length;
 
   useEffect(() => {
     const id = setInterval(() => setRoleIdx((i) => (i + 1) % rolesLen), 2800);
     return () => clearInterval(id);
   }, [rolesLen]);
+
+  // Motion Settings
+  const motionEnabled = profile?.hero_motion_enabled ?? true;
+  const intensity = profile?.hero_motion_intensity ?? 18;
+  const motionStyle = profile?.hero_motion_style || "parallax";
+  const heroImageSrc = formatImgUrl(profile?.hero_image_url) || media.hero;
+
+  const getMotionTransform = () => {
+    if (reduced || !motionEnabled || motionStyle === "static") {
+      return undefined;
+    }
+    if (motionStyle === "zoom-slow") {
+      return "scale(1.10)";
+    }
+    // Parallax default
+    return `translate3d(${pos.x * -intensity}px, ${pos.y * -(intensity * 0.75)}px, 0) scale(1.08)`;
+  };
+
+  // Main headline statement
+  const headline =
+    lang === "ar"
+      ? profile?.hero_title_ar
+        ? [profile.hero_title_ar]
+        : t.hero.statement
+      : profile?.hero_title_en
+      ? [profile.hero_title_en]
+      : t.hero.statement;
 
   return (
     <section
@@ -26,14 +77,13 @@ export function HeroSection() {
       <div
         className="absolute inset-0 film-grain"
         style={{
-          transform: reduced
-            ? undefined
-            : `translate3d(${pos.x * -18}px, ${pos.y * -14}px, 0) scale(1.08)`,
-          transition: "transform .12s linear",
+          transform: getMotionTransform(),
+          transition: motionStyle === "zoom-slow" ? "transform 8s ease-out" : "transform .12s linear",
         }}
       >
         <img
-          src={media.hero}
+          key={heroImageSrc}
+          src={heroImageSrc}
           alt="Hero"
           className="h-full w-full object-cover"
           style={{ opacity: loaded ? 1 : 0, transition: "opacity 1.8s ease" }}
@@ -63,7 +113,7 @@ export function HeroSection() {
                 animation: "fade-up .6s var(--ease-cine) forwards",
               }}
             >
-              {t.hero.roles[roleIdx]}
+              {customRoles[roleIdx]}
             </p>
           </div>
 
@@ -76,7 +126,7 @@ export function HeroSection() {
               transition: "opacity 1.2s var(--ease-cine) .2s, transform 1.4s var(--ease-cine) .2s",
             }}
           >
-            {t.hero.statement.map((line, i) => (
+            {headline.map((line, i) => (
               <span key={i} className="block">
                 {line}
               </span>
