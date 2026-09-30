@@ -4,7 +4,6 @@ import { useLang, LanguageProvider } from "@/lib/i18n";
 
 import { Navigation } from "@/components/Navigation";
 import { Intro } from "@/components/Intro";
-import { CustomCursor } from "@/components/CustomCursor";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { AmbientSpotlight } from "@/components/AmbientSpotlight";
 
@@ -59,7 +58,6 @@ function IndexPage() {
     <LanguageProvider>
       <SiteHead />
       <AmbientSpotlight />
-      <CustomCursor />
       <ScrollProgress />
       <Intro />
       <Navigation />

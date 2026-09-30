@@ -829,11 +829,11 @@ function GlobeScene({
       <RealisticGlobeSphere />
       <Atmosphere />
 
-      {/* Flight Arcs */}
-      <FlightArc startLat={15.36} startLon={44.19} endLat={24.71} endLon={46.67} offset={0} />
-      <FlightArc startLat={24.71} startLon={46.67} endLat={25.2} endLon={55.27} offset={0.25} />
-      <FlightArc startLat={24.71} startLon={46.67} endLat={30.04} endLon={31.24} offset={0.5} />
-      <FlightArc startLat={30.04} startLon={31.24} endLat={52.74} endLon={6.08} offset={0.75} />
+      {/* Flight Arcs connecting distributed global hubs */}
+      <FlightArc startLat={15.36} startLon={44.19} endLat={52.74} endLon={6.08} offset={0} />
+      <FlightArc startLat={52.74} startLon={6.08} endLat={40.71} endLon={-74.00} offset={0.25} />
+      <FlightArc startLat={15.36} startLon={44.19} endLat={35.68} endLon={139.75} offset={0.5} />
+      <FlightArc startLat={35.68} startLon={139.75} endLat={-33.86} endLon={151.20} offset={0.75} />
 
       {normalizedCountries.map((c, i) => (
         <CountryMarker
