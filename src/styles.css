@@ -92,8 +92,13 @@
 
 @utility type-mega {
   font-size: clamp(2.75rem, 13vw, 12rem);
-  line-height: 0.88;
+  line-height: 1.05;
   letter-spacing: -0.02em;
+}
+
+html[dir="rtl"] .type-mega {
+  line-height: 1.18;
+  letter-spacing: 0;
 }
 
 @utility type-display {

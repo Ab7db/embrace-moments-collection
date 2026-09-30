@@ -145,7 +145,7 @@ export function HeroSection() {
 
           {/* Main statement */}
           <h1
-            className="type-mega font-display text-foreground"
+            className="type-mega font-display text-foreground flex flex-col gap-2 md:gap-4"
             style={{
               opacity: loaded ? 1 : 0,
               transform: loaded ? "none" : "translateY(40px)",
@@ -153,7 +153,7 @@ export function HeroSection() {
             }}
           >
             {headline.map((line, i) => (
-              <span key={i} className="block">
+              <span key={i} className="block leading-[1.12] md:leading-[1.08]">
                 {line}
               </span>
             ))}
