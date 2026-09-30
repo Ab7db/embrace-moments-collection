@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useState, useEffect } from "react";
 import type { DbSiteProfile, DbStat } from "@/lib/database.types";
-import { Save, User, BarChart3, Camera, Link as LinkIcon, CheckCircle2, RefreshCw, Sparkles, Sliders } from "lucide-react";
+import { Save, User, BarChart3, Camera, Link as LinkIcon, CheckCircle2, RefreshCw, Sparkles, Sliders, Smartphone, Compass } from "lucide-react";
 import { ImageUpload } from "./ImageUpload";
 
 export function SettingsManager() {
@@ -252,18 +252,25 @@ export function SettingsManager() {
               />
             </div>
 
-            {/* Hero Motion & Parallax Settings */}
+            {/* Hero Motion & Mobile Gyroscope Settings */}
             <div className="p-6 border border-border bg-surface/50 rounded-sm space-y-5">
-              <div>
-                <h3 className="type-meta text-sm font-semibold text-foreground">
-                  التحكم بحركة ومؤثرات الصورة الرئيسية (Hero Motion & Effects)
-                </h3>
-                <p className="type-meta text-xs text-muted-foreground mt-1">
-                  حدد نمط وسرعة حركة الصورة الرئيسية عند تحريك الماوس أو التمرير.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-4">
+                <div>
+                  <h3 className="type-meta text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Smartphone className="h-4 w-4 text-accent" />
+                    حركة الصورة وتفاعلها مع الهاتف والجيروسكوب (Motion & Gyroscope)
+                  </h3>
+                  <p className="type-meta text-xs text-muted-foreground mt-1">
+                    التحكم في حركة الصورة عند إمالة وتدوير الهاتف تلقائياً وحركة الماوس والتأثيرات السينمائية.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-accent/10 border border-accent/30 text-accent text-[11px] type-meta shrink-0">
+                  <Compass className="h-3.5 w-3.5 animate-spin" style={{ animationDuration: '8s' }} />
+                  <span>يدعم مستشعر الجيروسكوب تلقائياً</span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
                 {/* Motion Enabled Toggle */}
                 <div className="flex items-center justify-between p-4 border border-border bg-surface rounded-sm">
                   <div>
@@ -271,7 +278,7 @@ export function SettingsManager() {
                       تفعيل حركة الصورة (Motion Active)
                     </label>
                     <span className="type-meta text-[11px] text-muted-foreground">
-                      تفعيل التفاعل الحركي ثلاثي الأبعاد مع الماوس والتمرير
+                      تفعيل الحركة التلقائية وتفاعل إمالة الهاتف والماوس
                     </span>
                   </div>
                   <input
@@ -290,7 +297,7 @@ export function SettingsManager() {
                 {/* Motion Style */}
                 <div className="p-4 border border-border bg-surface rounded-sm">
                   <label className="type-meta text-xs font-semibold text-foreground block mb-2">
-                    نمط الحركة (Motion Style)
+                    نمط حركة وتفاعل الهاتف (Motion Mode)
                   </label>
                   <select
                     value={profileForm.hero_motion_style || "parallax"}
@@ -302,46 +309,47 @@ export function SettingsManager() {
                     }
                     className="w-full bg-background border border-border px-3 py-2 rounded-sm type-meta text-xs text-foreground focus:border-accent outline-none"
                   >
-                    <option value="parallax">حركة بارالاكس تفاعلية مع الماوس (Interactive Parallax)</option>
-                    <option value="zoom-slow">تكبير سينمائي بطيء وهادئ (Cinematic Slow Zoom)</option>
-                    <option value="static">صورة ثابتة بدون حركة (Static Background)</option>
+                    <option value="parallax">✨ حركة شاملة (إمالة الهاتف بالـ Gyroscope + الماوس + تموج انسيابي تلقائي)</option>
+                    <option value="drift">🌊 حركة عائمة سينمائية ذاتية ومستمرة بدون لمس (Cinematic Auto-Floating)</option>
+                    <option value="zoom-slow">🔍 تكبير سينمائي بطيء وهادئ جداً (Slow Cinematic Zoom)</option>
+                    <option value="static">🛑 صورة ثابتة بدون أي حركة (Static Background)</option>
                   </select>
                 </div>
               </div>
 
               {/* Motion Intensity Slider */}
               {(profileForm.hero_motion_enabled ?? true) && profileForm.hero_motion_style !== "static" && (
-                <div className="p-4 border border-border bg-surface rounded-sm space-y-2">
+                <div className="p-4 border border-border bg-surface rounded-sm space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="type-meta text-xs font-semibold text-foreground">
-                      شدة وسرعة الحركة (Motion Intensity): {profileForm.hero_motion_intensity ?? 18}px
+                      قوة واستجابة إمالة الهاتف والماوس (Sensitivity & Intensity): {profileForm.hero_motion_intensity ?? 24}px
                     </label>
-                    <span className="type-meta text-[11px] text-accent font-medium">
-                      {(profileForm.hero_motion_intensity ?? 18) < 12
-                        ? "هادئ وخفيف"
-                        : (profileForm.hero_motion_intensity ?? 18) > 25
-                        ? "ديناميكي سريع"
-                        : "متوازن ومثالي"}
+                    <span className="type-meta text-[11px] text-accent font-medium px-2 py-0.5 rounded bg-accent/15 border border-accent/20">
+                      {(profileForm.hero_motion_intensity ?? 24) < 14
+                        ? "هادئ وخفيف جداً"
+                        : (profileForm.hero_motion_intensity ?? 24) > 30
+                        ? "تفاعل ديناميكي قوي"
+                        : "متوازن ومثالي للهواتف"}
                     </span>
                   </div>
                   <input
                     type="range"
-                    min="4"
-                    max="40"
+                    min="6"
+                    max="50"
                     step="2"
-                    value={profileForm.hero_motion_intensity ?? 18}
+                    value={profileForm.hero_motion_intensity ?? 24}
                     onChange={(e) =>
                       setProfileForm((prev) => ({
                         ...prev,
                         hero_motion_intensity: Number(e.target.value),
                       }))
                     }
-                    className="w-full accent-accent cursor-pointer"
+                    className="w-full accent-accent cursor-pointer h-2 bg-background rounded-lg"
                   />
                   <div className="flex justify-between type-meta text-[10px] text-muted-foreground/60">
-                    <span>4px (خفيف جداً)</span>
-                    <span>18px (افتراضي متوازن)</span>
-                    <span>40px (حركة عميقة)</span>
+                    <span>6px (استجابة خفيفة)</span>
+                    <span>24px (الافتراضي المثالي)</span>
+                    <span>50px (استجابة عميقة ثلاثية الأبعاد)</span>
                   </div>
                 </div>
               )}

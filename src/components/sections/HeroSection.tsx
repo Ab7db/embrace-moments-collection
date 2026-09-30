@@ -47,40 +47,114 @@ export function HeroSection() {
   const motionStyle = profile?.hero_motion_style || "parallax";
   const heroImageSrc = formatImgUrl(profile?.hero_image_url) || media.hero;
 
-  // Zero-rerender smoothed parallax via RAF and direct DOM ref
+  // Zero-rerender smoothed parallax, mobile phone gyroscope tilt, and ambient drift via RAF
   useEffect(() => {
-    if (reduced || !motionEnabled || motionStyle !== "parallax") {
+    if (reduced || !motionEnabled || motionStyle === "static") {
       if (bgRef.current) {
         bgRef.current.style.transform = motionStyle === "zoom-slow" ? "scale(1.10)" : "none";
       }
       return;
     }
+
     let rafId: number;
     let targetX = 0;
     let targetY = 0;
     let currentX = 0;
     let currentY = 0;
+    let hasGyro = false;
+    let isTouchDevice = false;
 
-    const onMove = (e: PointerEvent) => {
+    // Desktop pointer move
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return; // Touch handled by gyro/touch
       targetX = (e.clientX / window.innerWidth - 0.5) * -intensity;
       targetY = (e.clientY / window.innerHeight - 0.5) * -(intensity * 0.75);
     };
 
-    const loop = () => {
-      currentX += (targetX - currentX) * 0.08;
-      currentY += (targetY - currentY) * 0.08;
-      if (bgRef.current) {
-        bgRef.current.style.transform = `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0) scale(1.06)`;
+    // Mobile Phone Orientation / Gyroscope tilt
+    const onOrientation = (e: DeviceOrientationEvent) => {
+      if (e.gamma === null || e.beta === null) return;
+      hasGyro = true;
+      // gamma: left-to-right tilt in degrees [-90, 90]
+      // beta: front-to-back tilt in degrees [-180, 180], phone normally held at ~45-55 deg
+      const clampedGamma = Math.max(-35, Math.min(35, e.gamma));
+      const normalizedGamma = clampedGamma / 35; // [-1, 1]
+
+      const relativeBeta = e.beta - 50; // Calibrate for comfortable hand-held angle (~50 deg)
+      const clampedBeta = Math.max(-30, Math.min(30, relativeBeta));
+      const normalizedBeta = clampedBeta / 30; // [-1, 1]
+
+      targetX = -normalizedGamma * intensity;
+      targetY = -normalizedBeta * (intensity * 0.85);
+    };
+
+    // Mobile touch move parallax as responsive fallback
+    const onTouchMove = (e: TouchEvent) => {
+      if (hasGyro || !e.touches[0]) return;
+      isTouchDevice = true;
+      const touch = e.touches[0];
+      targetX = (touch.clientX / window.innerWidth - 0.5) * -intensity;
+      targetY = (touch.clientY / window.innerHeight - 0.5) * -(intensity * 0.75);
+    };
+
+    // Request iOS Gyroscope permission on first user tap if required by iOS 13+
+    const requestIosPermission = () => {
+      const anyDeviceOrientation = DeviceOrientationEvent as unknown as {
+        requestPermission?: () => Promise<"granted" | "denied">;
+      };
+      if (typeof anyDeviceOrientation?.requestPermission === "function") {
+        anyDeviceOrientation
+          .requestPermission()
+          .then((permission) => {
+            if (permission === "granted") {
+              window.addEventListener("deviceorientation", onOrientation, { passive: true });
+            }
+          })
+          .catch(() => {});
       }
+    };
+
+    // Start RAF loop with subtle organic ambient floating drift
+    const startTime = performance.now();
+    const loop = (timestamp: number) => {
+      const elapsed = timestamp - startTime;
+
+      // Organic subtle drift (breathing wave motion)
+      let ambientX = 0;
+      let ambientY = 0;
+      if (motionStyle === "drift" || motionStyle === "parallax") {
+        const driftFactor = motionStyle === "drift" ? 0.9 : 0.25;
+        ambientX = Math.sin(elapsed * 0.0009) * (intensity * driftFactor);
+        ambientY = Math.cos(elapsed * 0.0007) * (intensity * 0.7 * driftFactor);
+      }
+
+      const totalTargetX = targetX + ambientX;
+      const totalTargetY = targetY + ambientY;
+
+      // Smooth interpolation (lerp)
+      currentX += (totalTargetX - currentX) * 0.07;
+      currentY += (totalTargetY - currentY) * 0.07;
+
+      if (bgRef.current) {
+        bgRef.current.style.transform = `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0) scale(1.08)`;
+      }
+
       rafId = requestAnimationFrame(loop);
     };
 
-    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("deviceorientation", onOrientation, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchstart", requestIosPermission, { once: true, passive: true });
+
     rafId = requestAnimationFrame(loop);
 
     return () => {
       cancelAnimationFrame(rafId);
-      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("deviceorientation", onOrientation);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchstart", requestIosPermission);
     };
   }, [reduced, motionEnabled, motionStyle, intensity]);
 
