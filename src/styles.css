@@ -264,72 +264,61 @@ html[dir="rtl"] .type-mega {
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* Ambient Undulating Background Waves */
-@keyframes ambient-wave-1 {
+/* Ambient Right-to-Left Undulating Amber Waves */
+@keyframes wave-rtl-1 {
   0% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
-    opacity: 0.7;
+    transform: translate3d(70vw, -6%, 0) scale(0.92);
+    opacity: 0.45;
   }
-  33% {
-    transform: translate3d(-18%, 25%, 0) scale(1.18) rotate(15deg);
+  30% {
+    transform: translate3d(25vw, 10%, 0) scale(1.16);
     opacity: 0.95;
   }
-  66% {
-    transform: translate3d(-35%, 10%, 0) scale(0.92) rotate(-10deg);
-    opacity: 0.8;
+  70% {
+    transform: translate3d(-25vw, -8%, 0) scale(1.05);
+    opacity: 0.85;
   }
   100% {
-    transform: translate3d(-20%, 40%, 0) scale(1.12) rotate(20deg);
-    opacity: 1;
+    transform: translate3d(-75vw, 6%, 0) scale(0.88);
+    opacity: 0.4;
   }
 }
 
-@keyframes ambient-wave-2 {
+@keyframes wave-rtl-2 {
   0% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    transform: translate3d(75vw, 12%, 0) scale(0.88);
+    opacity: 0.4;
+  }
+  35% {
+    transform: translate3d(20vw, -12%, 0) scale(1.18);
+    opacity: 0.92;
+  }
+  75% {
+    transform: translate3d(-30vw, 8%, 0) scale(0.96);
     opacity: 0.8;
   }
-  33% {
-    transform: translate3d(28%, -18%, 0) scale(1.15) rotate(-20deg);
-    opacity: 0.65;
-  }
-  66% {
-    transform: translate3d(45%, 15%, 0) scale(0.95) rotate(10deg);
-    opacity: 0.9;
-  }
   100% {
-    transform: translate3d(30%, 35%, 0) scale(1.2) rotate(-15deg);
+    transform: translate3d(-80vw, -10%, 0) scale(0.85);
+    opacity: 0.35;
+  }
+}
+
+@keyframes wave-rtl-3 {
+  0% {
+    transform: translate3d(65vw, -10%, 0) scale(0.9);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translate3d(10vw, 14%, 0) scale(1.22);
+    opacity: 0.95;
+  }
+  80% {
+    transform: translate3d(-35vw, -6%, 0) scale(1.02);
     opacity: 0.75;
   }
-}
-
-@keyframes ambient-wave-3 {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.65;
-  }
-  50% {
-    transform: translate3d(-25%, -22%, 0) scale(1.22);
-    opacity: 0.95;
-  }
   100% {
-    transform: translate3d(-40%, 15%, 0) scale(0.9);
-    opacity: 0.7;
-  }
-}
-
-@keyframes ambient-wave-4 {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
-    opacity: 0.6;
-  }
-  50% {
-    transform: translate3d(20%, -30%, 0) scale(1.25) rotate(25deg);
-    opacity: 0.9;
-  }
-  100% {
-    transform: translate3d(-15%, -20%, 0) scale(0.88) rotate(-15deg);
-    opacity: 0.65;
+    transform: translate3d(-85vw, 12%, 0) scale(0.85);
+    opacity: 0.3;
   }
 }
 
