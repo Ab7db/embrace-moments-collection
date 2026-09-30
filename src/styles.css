@@ -132,12 +132,25 @@
 @utility frame-photo {
   overflow: hidden;
   background-color: var(--surface);
+  transition: box-shadow 0.6s var(--ease-cine), border-color 0.6s var(--ease-cine);
   & img {
     transition: transform 1.2s var(--ease-cine), filter 1.2s var(--ease-cine);
     will-change: transform;
   }
+  &:hover {
+    box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.8), 0 0 28px -8px rgba(232, 184, 75, 0.16);
+  }
   &:hover img {
     transform: scale(1.06);
+  }
+}
+
+@utility lens-glow {
+  position: relative;
+  transition: border-color 0.5s var(--ease-cine), box-shadow 0.5s var(--ease-cine);
+  &:hover {
+    border-color: oklch(0.78 0.065 78 / 35%);
+    box-shadow: 0 12px 36px -10px oklch(0 0 0 / 70%), 0 0 24px -6px oklch(0.78 0.065 78 / 18%);
   }
 }
 
