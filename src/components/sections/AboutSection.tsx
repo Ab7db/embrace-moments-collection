@@ -9,14 +9,13 @@ import { formatImgUrl } from "@/lib/utils";
 import type { DbSiteProfile, DbStat } from "@/lib/database.types";
 import { Camera, MapPin } from "lucide-react";
 
-function useCounter(target: number, active: boolean) {
-  const [val, setVal] = useState<number>(() => (target > 0 ? target : 0));
+function useCounter(target: number, active: boolean, duration = 2400) {
+  const [val, setVal] = useState<number>(0);
 
   useEffect(() => {
     const targetNum = Number(target) || 0;
     if (!active) {
-      // Show target right away or initial
-      setVal(targetNum);
+      setVal(0);
       return;
     }
     if (targetNum <= 0) {
@@ -24,17 +23,18 @@ function useCounter(target: number, active: boolean) {
       return;
     }
 
-    let start = 0;
-    const duration = 1400; // ms
-    const startTime = performance.now();
+    let startTimestamp: number | null = null;
 
-    const frame = (now: number) => {
-      const elapsed = now - startTime;
+    const frame = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const elapsed = timestamp - startTimestamp;
       const progress = Math.min(elapsed / duration, 1);
-      // easeOutExpo
-      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      
+      // Smooth luxury easeOut curve (easeOutCubic)
+      const ease = 1 - Math.pow(1 - progress, 3.2);
       const current = Math.round(ease * targetNum);
       setVal(current);
+
       if (progress < 1) {
         requestAnimationFrame(frame);
       } else {
@@ -44,7 +44,7 @@ function useCounter(target: number, active: boolean) {
 
     const id = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(id);
-  }, [target, active]);
+  }, [target, active, duration]);
 
   return val;
 }
@@ -53,13 +53,15 @@ function StatCard({
   stat,
   active,
   lang,
+  index = 0,
 }: {
   stat: DbStat | any;
   active: boolean;
   lang: "en" | "ar";
+  index?: number;
 }) {
   const rawValue = typeof stat.value === "number" ? stat.value : parseInt(stat.value) || 0;
-  const count = useCounter(rawValue, active);
+  const count = useCounter(rawValue, active, 2200 + index * 180);
   const label =
     lang === "ar"
       ? stat.label_ar || stat.labelAr || "إحصائية"
@@ -103,27 +105,22 @@ export function AboutSection() {
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) {
-      setActive(true);
-      return;
-    }
+    if (!el) return;
+
     const io = new IntersectionObserver(
-      ([e]) => {
-        if (e?.isIntersecting) {
+      ([entry]) => {
+        if (entry?.isIntersecting) {
           setActive(true);
           io.disconnect();
         }
       },
-      { threshold: 0.15, rootMargin: "50px" }
+      { threshold: 0.2, rootMargin: "0px 0px -30px 0px" }
     );
-    io.observe(el);
 
-    // Fallback trigger in case IntersectionObserver doesn't fire
-    const timer = setTimeout(() => setActive(true), 1000);
+    io.observe(el);
 
     return () => {
       io.disconnect();
-      clearTimeout(timer);
     };
   }, []);
 
@@ -234,7 +231,7 @@ export function AboutSection() {
             <div ref={ref} className="mt-6 grid grid-cols-2 gap-8 sm:grid-cols-4 pt-6 border-t border-border/60">
               {stats.map((s: any, i: number) => (
                 <Reveal key={s.id || s.label_en || s.labelEn} delay={i * 70}>
-                  <StatCard stat={s} active={active} lang={lang} />
+                  <StatCard stat={s} active={active} lang={lang} index={i} />
                 </Reveal>
               ))}
             </div>
