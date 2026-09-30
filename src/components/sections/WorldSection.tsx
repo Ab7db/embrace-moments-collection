@@ -507,9 +507,9 @@ export function WorldSection() {
         </div>
 
         {/* Interactive 3D Globe on all devices (Mobile & Desktop) */}
-        <div className="mt-12">
+        <div className="mt-10">
           {mounted ? (
-            <div className="relative h-[480px] sm:h-[580px] md:h-[680px] w-full rounded-sm overflow-hidden border border-border/50 bg-background/50 shadow-2xl">
+            <div className="relative h-[360px] sm:h-[440px] md:h-[500px] w-full rounded-sm overflow-hidden border border-border/40 bg-surface/20 shadow-2xl backdrop-blur-sm">
               <Globe
                 countries={countries}
                 onSelectCountry={(c) => setActiveCountry(c)}
@@ -517,7 +517,7 @@ export function WorldSection() {
               />
             </div>
           ) : (
-            <div className="h-[480px] w-full bg-surface/30 animate-pulse rounded-sm" />
+            <div className="h-[360px] sm:h-[440px] md:h-[500px] w-full bg-surface/30 animate-pulse rounded-sm" />
           )}
         </div>
       </div>
