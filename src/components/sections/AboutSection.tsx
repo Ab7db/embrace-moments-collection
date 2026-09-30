@@ -109,12 +109,11 @@ export function AboutSection() {
 
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) {
-          setActive(true);
-          io.disconnect();
+        if (entry) {
+          setActive(entry.isIntersecting);
         }
       },
-      { threshold: 0.2, rootMargin: "0px 0px -30px 0px" }
+      { threshold: 0.15, rootMargin: "0px 0px -20px 0px" }
     );
 
     io.observe(el);
