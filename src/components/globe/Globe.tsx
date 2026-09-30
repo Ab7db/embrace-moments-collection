@@ -16,17 +16,16 @@ import { useLang, pick } from "@/lib/i18n";
 import { useMounted, useReducedMotion } from "@/hooks/useMotionPrefs";
 
 /* ══════════════════════════════════════════
-   CONSTANTS
+   CONSTANTS & LUXURY PALETTE
 ══════════════════════════════════════════ */
-const R = 2; // Globe radius (scene units)
+const R = 2.0; // Globe radius
 const AMBER = "#c49a45";
-const AMBER_HI = "#e8b84b";
-const CAM_DIST_DEFAULT = 5.5;
+const AMBER_HI = "#f0c25a";
+const AMBER_PALE = "#ffe8a3";
+const CAM_DIST = 5.2; // Fixed locked camera distance (NO zoom in / zoom out)
 
 /* ══════════════════════════════════════════
    COORDINATE MATH
-   φ = (90 - lat) × (π/180)
-   θ = (lon + 180) × (π/180)
 ══════════════════════════════════════════ */
 function latLonToVec3(lat: number, lon: number, radius = R): THREE.Vector3 {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -34,45 +33,416 @@ function latLonToVec3(lat: number, lon: number, radius = R): THREE.Vector3 {
   return new THREE.Vector3(
     radius * Math.sin(phi) * Math.cos(theta),
     radius * Math.cos(phi),
-    radius * Math.sin(phi) * Math.sin(theta),
+    radius * Math.sin(phi) * Math.sin(theta)
   );
 }
 
 /* ══════════════════════════════════════════
-   GLOBE SPHERE
-   Dark base + wireframe lat/lon overlay
+   HIGH-RES REALISTIC PROCEDURAL EARTH TEXTURES
+   Creates dark luxury realistic earth with continents,
+   topography, specular ocean mask & glowing city lights
 ══════════════════════════════════════════ */
-function GlobeSphere() {
-  return (
-    <>
-      {/* Base */}
-      <mesh>
-        <sphereGeometry args={[R, 64, 64]} />
-        <meshPhongMaterial
-          color="#0b0b0b"
-          emissive="#070707"
-          specular="#1e1e1e"
-          shininess={20}
-        />
-      </mesh>
+function useRealisticEarthTextures() {
+  return useMemo(() => {
+    const width = 2048;
+    const height = 1024;
 
-      {/* Wireframe lat/lon lines */}
-      <mesh renderOrder={1}>
-        <sphereGeometry args={[R + 0.003, 28, 14]} />
-        <meshBasicMaterial
-          color="#1e1e1e"
-          wireframe
-          transparent
-          opacity={0.28}
-          depthWrite={false}
-        />
+    // 1. Earth Map Canvas (Continents + Oceans + Night Lights)
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+
+    // 2. Specular Map Canvas (Oceans reflect gold, land is matte)
+    const specCanvas = document.createElement("canvas");
+    specCanvas.width = width;
+    specCanvas.height = height;
+    const specCtx = specCanvas.getContext("2d");
+
+    // 3. Clouds Canvas
+    const cloudCanvas = document.createElement("canvas");
+    cloudCanvas.width = width;
+    cloudCanvas.height = height;
+    const cloudCtx = cloudCanvas.getContext("2d");
+
+    if (!ctx || !specCtx || !cloudCtx) {
+      return { mapTexture: null, specTexture: null, cloudTexture: null };
+    }
+
+    // A) Deep Oceanic Gradient
+    const oceanGrad = ctx.createLinearGradient(0, 0, 0, height);
+    oceanGrad.addColorStop(0, "#03060a");
+    oceanGrad.addColorStop(0.3, "#070b12");
+    oceanGrad.addColorStop(0.5, "#0b1019");
+    oceanGrad.addColorStop(0.7, "#070b12");
+    oceanGrad.addColorStop(1, "#03060a");
+    ctx.fillStyle = oceanGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Specular: Oceans are reflective white/grey
+    specCtx.fillStyle = "#222222";
+    specCtx.fillRect(0, 0, width, height);
+
+    // B) Lat/Lon Coordinate Grid
+    ctx.strokeStyle = "rgba(196, 154, 69, 0.07)";
+    ctx.lineWidth = 1;
+    for (let lat = -80; lat <= 80; lat += 20) {
+      const y = ((90 - lat) / 180) * height;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    for (let lon = -180; lon <= 180; lon += 30) {
+      const x = ((lon + 180) / 360) * width;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+
+    // Helper: Draw approximate landmass polygon
+    const toXY = (lat: number, lon: number): [number, number] => [
+      ((lon + 180) / 360) * width,
+      ((90 - lat) / 180) * height,
+    ];
+
+    const drawPoly = (
+      points: [number, number][],
+      fillColor: string,
+      strokeColor: string
+    ) => {
+      const first = points[0];
+      if (!first) return;
+      ctx.beginPath();
+      const [startLat, startLon] = first;
+      const [startX, startY] = toXY(startLat, startLon);
+      ctx.moveTo(startX, startY);
+      for (let i = 1; i < points.length; i++) {
+        const pt = points[i];
+        if (!pt) continue;
+        const [lat, lon] = pt;
+        const [x, y] = toXY(lat, lon);
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // In specular map, land is non-reflective dark
+      specCtx.beginPath();
+      specCtx.moveTo(startX, startY);
+      for (let i = 1; i < points.length; i++) {
+        const pt = points[i];
+        if (!pt) continue;
+        const [lat, lon] = pt;
+        const [x, y] = toXY(lat, lon);
+        specCtx.lineTo(x, y);
+      }
+      specCtx.closePath();
+      specCtx.fillStyle = "#000000";
+      specCtx.fill();
+    };
+
+    const landFill = "#151921";
+    const landBorder = "rgba(196, 154, 69, 0.45)";
+
+    // Arabian Peninsula & Middle East (Focal region)
+    drawPoly(
+      [
+        [32, 35],
+        [30, 48],
+        [25, 56],
+        [22, 59],
+        [16, 54],
+        [12, 45],
+        [12, 43],
+        [16, 42],
+        [28, 34],
+        [32, 35],
+      ],
+      "#1a202a",
+      "rgba(240, 194, 90, 0.75)"
+    );
+
+    // Africa
+    drawPoly(
+      [
+        [36, -5],
+        [37, 10],
+        [32, 32],
+        [15, 40],
+        [11, 51],
+        [-11, 40],
+        [-34, 20],
+        [-34, 18],
+        [-15, 12],
+        [5, 9],
+        [5, -2],
+        [12, -16],
+        [28, -13],
+        [36, -5],
+      ],
+      landFill,
+      landBorder
+    );
+
+    // Europe
+    drawPoly(
+      [
+        [36, -9],
+        [43, -9],
+        [48, -4],
+        [58, 5],
+        [71, 28],
+        [68, 50],
+        [55, 60],
+        [45, 40],
+        [36, 28],
+        [36, -9],
+      ],
+      landFill,
+      landBorder
+    );
+
+    // Asia & India
+    drawPoly(
+      [
+        [42, 40],
+        [55, 60],
+        [70, 75],
+        [72, 140],
+        [60, 160],
+        [40, 145],
+        [25, 120],
+        [8, 105],
+        [8, 77],
+        [25, 68],
+        [30, 60],
+        [42, 40],
+      ],
+      landFill,
+      landBorder
+    );
+
+    // North America
+    drawPoly(
+      [
+        [15, -92],
+        [20, -105],
+        [30, -115],
+        [48, -125],
+        [60, -140],
+        [70, -160],
+        [72, -95],
+        [60, -65],
+        [45, -60],
+        [30, -80],
+        [25, -80],
+        [18, -90],
+      ],
+      landFill,
+      landBorder
+    );
+
+    // South America
+    drawPoly(
+      [
+        [12, -75],
+        [5, -52],
+        [-10, -36],
+        [-23, -43],
+        [-54, -68],
+        [-40, -73],
+        [-15, -75],
+        [-5, -81],
+        [8, -78],
+      ],
+      landFill,
+      landBorder
+    );
+
+    // Australia
+    drawPoly(
+      [
+        [-12, 130],
+        [-15, 145],
+        [-25, 153],
+        [-38, 145],
+        [-35, 115],
+        [-22, 114],
+        [-12, 130],
+      ],
+      landFill,
+      landBorder
+    );
+
+    // C) Realistic Glowing City Lights (Golden night constellations)
+    const cities: [number, number, number][] = [
+      // Sana'a & Yemen
+      [15.36, 44.19, 6],
+      [14.5, 44.4, 4],
+      [12.8, 45.0, 5],
+      // Riyadh & Saudi
+      [24.71, 46.67, 8],
+      [21.5, 39.2, 7],
+      [26.4, 50.1, 6],
+      // Dubai & UAE
+      [25.2, 55.27, 8],
+      [24.4, 54.3, 6],
+      // Cairo & Egypt
+      [30.04, 31.24, 8],
+      [31.2, 29.9, 6],
+      // Netherlands / Europe
+      [52.36, 4.9, 7],
+      [52.74, 6.08, 5],
+      [48.85, 2.35, 8],
+      [51.5, -0.12, 8],
+      [41.9, 12.5, 7],
+      // Global hubs
+      [40.71, -74.0, 9],
+      [34.05, -118.25, 8],
+      [35.68, 139.75, 9],
+      [22.3, 114.17, 8],
+      [1.35, 103.82, 8],
+    ];
+
+    cities.forEach(([lat, lon, rad]) => {
+      const [cx, cy] = toXY(lat, lon);
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad * 3.5);
+      glow.addColorStop(0, AMBER_PALE);
+      glow.addColorStop(0.3, AMBER_HI);
+      glow.addColorStop(0.7, "rgba(196, 154, 69, 0.35)");
+      glow.addColorStop(1, "transparent");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad * 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Center bright photon
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // D) Clouds Canvas
+    cloudCtx.fillStyle = "rgba(0,0,0,0)";
+    cloudCtx.fillRect(0, 0, width, height);
+
+    for (let i = 0; i < 45; i++) {
+      const cx = Math.random() * width;
+      const cy = Math.random() * height;
+      const rx = 80 + Math.random() * 160;
+      const ry = 30 + Math.random() * 60;
+      const cloudGrad = cloudCtx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        Math.max(rx, ry)
+      );
+      cloudGrad.addColorStop(0, "rgba(255, 255, 255, 0.18)");
+      cloudGrad.addColorStop(0.6, "rgba(230, 240, 255, 0.07)");
+      cloudGrad.addColorStop(1, "transparent");
+      cloudCtx.fillStyle = cloudGrad;
+      cloudCtx.beginPath();
+      cloudCtx.ellipse(cx, cy, rx, ry, (Math.random() - 0.5) * 0.5, 0, Math.PI * 2);
+      cloudCtx.fill();
+    }
+
+    const mapTexture = new THREE.CanvasTexture(canvas);
+    mapTexture.wrapS = THREE.RepeatWrapping;
+    mapTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+    const specTexture = new THREE.CanvasTexture(specCanvas);
+    specTexture.wrapS = THREE.RepeatWrapping;
+    specTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+    const cloudTexture = new THREE.CanvasTexture(cloudCanvas);
+    cloudTexture.wrapS = THREE.RepeatWrapping;
+    cloudTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+    return { mapTexture, specTexture, cloudTexture };
+  }, []);
+}
+
+/* ══════════════════════════════════════════
+   EXPEDITION FLIGHT ARCS (Curved 3D Beams)
+   Connecting photographic locations with energy pulses
+══════════════════════════════════════════ */
+function FlightArc({
+  startLat,
+  startLon,
+  endLat,
+  endLon,
+  offset = 0,
+}: {
+  startLat: number;
+  startLon: number;
+  endLat: number;
+  endLon: number;
+  offset?: number;
+}) {
+  const p1 = latLonToVec3(startLat, startLon, R);
+  const p2 = latLonToVec3(endLat, endLon, R);
+
+  // Calculate high arc midpoint
+  const mid = p1.clone().add(p2).multiplyScalar(0.5);
+  const distance = p1.distanceTo(p2);
+  mid.normalize().multiplyScalar(R + distance * 0.28);
+
+  const curve = useMemo(() => {
+    return new THREE.QuadraticBezierCurve3(p1, mid, p2);
+  }, [p1, mid, p2]);
+
+  const points = useMemo(() => curve.getPoints(45), [curve]);
+  const lineGeo = useMemo(() => {
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, [points]);
+
+  const lineObject = useMemo(() => {
+    const mat = new THREE.LineBasicMaterial({
+      color: new THREE.Color(AMBER),
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false,
+    });
+    return new THREE.Line(lineGeo, mat);
+  }, [lineGeo]);
+
+  const pulseRef = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    const t = (clock.elapsedTime * 0.4 + offset) % 1;
+    const pt = curve.getPoint(t);
+    if (pulseRef.current) {
+      pulseRef.current.position.copy(pt);
+      const scale = Math.sin(t * Math.PI) * 1.2 + 0.3;
+      pulseRef.current.scale.setScalar(scale);
+    }
+  });
+
+  return (
+    <group>
+      {/* Curved glowing arc line */}
+      <primitive object={lineObject} />
+
+      {/* Moving energy photon along the route */}
+      <mesh ref={pulseRef}>
+        <sphereGeometry args={[0.024, 10, 10]} />
+        <meshBasicMaterial color={AMBER_HI} />
       </mesh>
-    </>
+    </group>
   );
 }
 
 /* ══════════════════════════════════════════
-   ATMOSPHERIC GLOW (Fresnel / Rim Light)
+   ATMOSPHERE & AURORA HALO
 ══════════════════════════════════════════ */
 function Atmosphere() {
   const innerRef = useRef<THREE.Mesh>(null);
@@ -80,35 +450,38 @@ function Atmosphere() {
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    const breathe = Math.sin(t * 0.7) * 0.012;
-    if (innerRef.current)
+    const breathe = Math.sin(t * 0.8) * 0.015;
+    if (innerRef.current) {
       (innerRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.055 + breathe;
-    if (outerRef.current)
+        0.08 + breathe;
+    }
+    if (outerRef.current) {
       (outerRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.032 + breathe * 0.5;
+        0.045 + breathe * 0.5;
+    }
   });
 
   return (
     <>
-      {/* Inner rim */}
+      {/* Inner Rayleigh Scattering Rim */}
       <mesh ref={innerRef} renderOrder={2}>
-        <sphereGeometry args={[R + 0.04, 64, 64]} />
+        <sphereGeometry args={[R + 0.035, 64, 64]} />
         <meshBasicMaterial
-          color={AMBER}
+          color={AMBER_HI}
           transparent
-          opacity={0.055}
+          opacity={0.08}
           side={THREE.BackSide}
           depthWrite={false}
         />
       </mesh>
-      {/* Outer halo */}
+
+      {/* Outer Volumetric Glow Corona */}
       <mesh ref={outerRef} renderOrder={3}>
-        <sphereGeometry args={[R + 0.22, 64, 64]} />
+        <sphereGeometry args={[R + 0.28, 64, 64]} />
         <meshBasicMaterial
           color={AMBER}
           transparent
-          opacity={0.032}
+          opacity={0.045}
           side={THREE.BackSide}
           depthWrite={false}
         />
@@ -118,8 +491,73 @@ function Atmosphere() {
 }
 
 /* ══════════════════════════════════════════
-   COUNTRY MARKER
-   Pulsing amber beacon + beam + tooltip
+   REALISTIC GLOBE SPHERE
+══════════════════════════════════════════ */
+function RealisticGlobeSphere() {
+  const { mapTexture, specTexture, cloudTexture } = useRealisticEarthTextures();
+  const cloudMesh = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (cloudMesh.current) {
+      cloudMesh.current.rotation.y = t * 0.02;
+    }
+  });
+
+  return (
+    <>
+      {/* Main High-Detail Photorealistic Earth */}
+      <mesh renderOrder={1}>
+        <sphereGeometry args={[R, 64, 64]} />
+        {mapTexture ? (
+          <meshPhongMaterial
+            map={mapTexture}
+            specularMap={specTexture || undefined}
+            specular={new THREE.Color(AMBER)}
+            shininess={35}
+            emissive={new THREE.Color("#06080d")}
+          />
+        ) : (
+          <meshPhongMaterial
+            color="#0b0e14"
+            emissive="#06080d"
+            specular="#1e1e1e"
+            shininess={20}
+          />
+        )}
+      </mesh>
+
+      {/* Realistic Rotating Clouds Layer */}
+      {cloudTexture && (
+        <mesh ref={cloudMesh} renderOrder={4}>
+          <sphereGeometry args={[R + 0.022, 64, 64]} />
+          <meshPhongMaterial
+            map={cloudTexture}
+            transparent
+            opacity={0.38}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )}
+
+      {/* Subtle Navigation Coordinates Cage */}
+      <mesh renderOrder={2}>
+        <sphereGeometry args={[R + 0.006, 28, 14]} />
+        <meshBasicMaterial
+          color="#c49a45"
+          wireframe
+          transparent
+          opacity={0.12}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════
+   COUNTRY MARKER WITH CLEAN PERMANENT LABEL
 ══════════════════════════════════════════ */
 function CountryMarker({
   country,
@@ -144,41 +582,44 @@ function CountryMarker({
   const active = hovered || isSelected;
 
   /* Surface position & outward quaternion */
-  const position = useMemo(() => latLonToVec3(country.lat, country.lon), [country]);
+  const position = useMemo(
+    () => latLonToVec3(country.lat, country.lon),
+    [country]
+  );
   const quaternion = useMemo(() => {
     const normal = position.clone().normalize();
     return new THREE.Quaternion().setFromUnitVectors(
       new THREE.Vector3(0, 1, 0),
-      normal,
+      normal
     );
   }, [position]);
 
   const col = active ? AMBER_HI : AMBER;
-  const beamH = active ? 0.35 : 0.18;
+  const beamH = active ? 0.32 : 0.18;
 
   /* Pulsing animation + Camera facing calculation */
   useFrame(({ clock, camera }) => {
     const t = clock.elapsedTime + phaseOffset;
-    const p1 = (Math.sin(t * 2.3) + 1) * 0.5; // 0..1
-    const p2 = (Math.sin(t * 2.3 - 1.1) + 1) * 0.5;
+    const p1 = (Math.sin(t * 2.5) + 1) * 0.5; // 0..1
+    const p2 = (Math.sin(t * 2.5 - 1.2) + 1) * 0.5;
 
     if (ring1.current) {
-      ring1.current.scale.setScalar(1 + p1 * 1.2);
+      ring1.current.scale.setScalar(1 + p1 * 1.3);
       (ring1.current.material as THREE.MeshBasicMaterial).opacity =
         0.95 - p1 * 0.9;
     }
     if (ring2.current) {
-      ring2.current.scale.setScalar(1 + p2 * 2.2);
+      ring2.current.scale.setScalar(1 + p2 * 2.3);
       (ring2.current.material as THREE.MeshBasicMaterial).opacity =
         0.55 - p2 * 0.55;
     }
     if (beam.current)
       (beam.current.material as THREE.MeshBasicMaterial).opacity =
-        0.2 + p1 * 0.4;
+        0.25 + p1 * 0.45;
     if (dot.current)
-      dot.current.scale.setScalar(active ? 1.4 : 1 + p1 * 0.15);
+      dot.current.scale.setScalar(active ? 1.4 : 1 + p1 * 0.18);
 
-    // Calculate facing dot product with camera
+    // Camera facing check
     const markerNormal = position.clone().normalize();
     const camDir = camera.position.clone().normalize();
     const dotFacing = markerNormal.dot(camDir);
@@ -188,7 +629,6 @@ function CountryMarker({
     }
   });
 
-  /* Pointer handlers */
   const onOver = useCallback(
     (e: ThreeEvent<PointerEvent> | React.MouseEvent) => {
       e.stopPropagation();
@@ -196,7 +636,7 @@ function CountryMarker({
       onHover(country);
       document.body.style.cursor = "pointer";
     },
-    [country, onHover],
+    [country, onHover]
   );
   const onOut = useCallback(() => {
     setHovered(false);
@@ -208,21 +648,25 @@ function CountryMarker({
       e.stopPropagation();
       onClick(country);
     },
-    [country, onClick],
+    [country, onClick]
   );
 
   const cityName = pick(lang, country.cityEn, country.cityAr);
-  const countryName = pick(lang, country.nameEn, country.nameAr);
 
   return (
     <group position={position} quaternion={quaternion}>
-      {/* Vertical light beam */}
+      {/* Light beam */}
       <mesh ref={beam} position={[0, beamH / 2, 0]}>
-        <cylinderGeometry args={[0.004, 0.0005, beamH, 6]} />
-        <meshBasicMaterial color={col} transparent opacity={0.35} depthWrite={false} />
+        <cylinderGeometry args={[0.005, 0.0008, beamH, 6]} />
+        <meshBasicMaterial
+          color={col}
+          transparent
+          opacity={0.4}
+          depthWrite={false}
+        />
       </mesh>
 
-      {/* Pin sphere — interactive hit target */}
+      {/* Pin beacon target */}
       <mesh
         ref={dot}
         position={[0, beamH, 0]}
@@ -230,23 +674,32 @@ function CountryMarker({
         onPointerOut={onOut}
         onClick={onClk}
       >
-        <sphereGeometry args={[0.03, 12, 12]} />
+        <sphereGeometry args={[0.032, 12, 12]} />
         <meshBasicMaterial color={col} />
       </mesh>
 
-      {/* Inner pulsing ring */}
+      {/* Concentric pulsing rings */}
       <mesh ref={ring1} renderOrder={5}>
         <torusGeometry args={[0.058, 0.007, 8, 32]} />
-        <meshBasicMaterial color={col} transparent opacity={0.95} depthWrite={false} />
+        <meshBasicMaterial
+          color={col}
+          transparent
+          opacity={0.95}
+          depthWrite={false}
+        />
       </mesh>
 
-      {/* Outer pulse ring */}
       <mesh ref={ring2} renderOrder={5}>
         <torusGeometry args={[0.095, 0.004, 8, 32]} />
-        <meshBasicMaterial color={col} transparent opacity={0.45} depthWrite={false} />
+        <meshBasicMaterial
+          color={col}
+          transparent
+          opacity={0.45}
+          depthWrite={false}
+        />
       </mesh>
 
-      {/* Permanent clean floating City Name Label */}
+      {/* Permanent floating City Name Label */}
       {isFacing && (
         <Html
           position={[0, beamH + 0.1, 0]}
@@ -302,7 +755,7 @@ function CountryMarker({
 }
 
 /* ══════════════════════════════════════════
-   SCENE  (inside Canvas)
+   SCENE & NO-ZOOM ROTATION
 ══════════════════════════════════════════ */
 function GlobeScene({
   selectedCountry,
@@ -337,63 +790,92 @@ function GlobeScene({
     return countries;
   }, [propCountries]);
 
-  /* Initial camera position */
+  /* Fixed Camera initial position (Locked at distance 5.2) */
   useEffect(() => {
-    camera.position.set(0, 1.2, CAM_DIST_DEFAULT);
+    camera.position.set(0, 1.0, CAM_DIST);
     camera.lookAt(0, 0, 0);
   }, [camera]);
 
-  /* Click → GSAP camera pan */
+  /* Click → Rotate globe to face country WITHOUT ANY ZOOM */
   const handleClick = useCallback(
     (country: Country) => {
       const isAlreadySelected = selectedCountry?.id === country.id;
       const ctrl = controlsRef.current;
 
       if (isAlreadySelected) {
-        /* Deselect — zoom back out */
-        gsap.to(camera.position, {
-          x: 0, y: 1.2, z: CAM_DIST_DEFAULT,
-          duration: 1.4, ease: "power2.inOut",
-          onUpdate: () => ctrl?.update?.(),
-        });
         if (onCountrySelect) onCountrySelect(null);
         return;
       }
 
-      /* Face the selected country */
+      /* Rotate camera around origin at CONSTANT distance CAM_DIST (No zoom in / out) */
       const surfacePos = latLonToVec3(country.lat, country.lon);
       const dir = surfacePos.clone().normalize();
-      const newPos = dir.multiplyScalar(4.0);
+      const newPos = dir.multiplyScalar(CAM_DIST);
 
       if (ctrl) ctrl.enabled = false;
       gsap.to(camera.position, {
-        x: newPos.x, y: newPos.y, z: newPos.z,
-        duration: 1.7, ease: "power2.inOut",
-        onUpdate: () => ctrl?.update?.(),
-        onComplete: () => { if (ctrl) ctrl.enabled = true; },
+        x: newPos.x,
+        y: newPos.y,
+        z: newPos.z,
+        duration: 1.4,
+        ease: "power2.inOut",
+        onUpdate: () => {
+          camera.lookAt(0, 0, 0);
+          ctrl?.update?.();
+        },
+        onComplete: () => {
+          if (ctrl) ctrl.enabled = true;
+        },
       });
 
       if (onCountrySelect) onCountrySelect(country);
     },
-    [camera, selectedCountry, onCountrySelect],
+    [camera, selectedCountry, onCountrySelect]
   );
 
   return (
     <>
-      {/* Lighting */}
-      <ambientLight intensity={0.22} />
-      <directionalLight position={[5, 4, 5]} intensity={0.95} color="#ffffff" />
-      <directionalLight position={[-4, -2, -4]} intensity={0.28} color={AMBER} />
-      <pointLight position={[9, 9, 9]} intensity={0.45} color={AMBER} decay={2} />
+      {/* Cinematic Lighting */}
+      <ambientLight intensity={0.28} />
+      <directionalLight
+        position={[6, 5, 6]}
+        intensity={1.1}
+        color="#ffffff"
+      />
+      <directionalLight
+        position={[-5, -3, -5]}
+        intensity={0.35}
+        color={AMBER}
+      />
+      <pointLight
+        position={[0, 8, 4]}
+        intensity={0.6}
+        color={AMBER_HI}
+        decay={2}
+      />
 
-      {/* Star field */}
-      <Stars radius={65} depth={60} count={2800} factor={4} saturation={0} fade speed={0.25} />
+      {/* Cosmic Starfield */}
+      <Stars
+        radius={70}
+        depth={60}
+        count={3200}
+        factor={4}
+        saturation={0.1}
+        fade
+        speed={0.2}
+      />
 
-      {/* Globe */}
-      <GlobeSphere />
+      {/* Realistic Earth & Atmosphere */}
+      <RealisticGlobeSphere />
       <Atmosphere />
 
-      {/* Country markers */}
+      {/* Connecting Expedition Arcs */}
+      <FlightArc startLat={15.36} startLon={44.19} endLat={24.71} endLon={46.67} offset={0} />
+      <FlightArc startLat={24.71} startLon={46.67} endLat={25.2} endLon={55.27} offset={0.25} />
+      <FlightArc startLat={24.71} startLon={46.67} endLat={30.04} endLon={31.24} offset={0.5} />
+      <FlightArc startLat={30.04} startLon={31.24} endLat={52.74} endLon={6.08} offset={0.75} />
+
+      {/* Country Markers */}
       {normalizedCountries.map((c, i) => (
         <CountryMarker
           key={c.id}
@@ -405,26 +887,26 @@ function GlobeScene({
         />
       ))}
 
-      {/* Orbit Controls */}
+      {/* Orbit Controls (ZOOM IS STRICTLY DISABLED) */}
       <OrbitControls
         ref={controlsRef}
         enablePan={false}
-        enableZoom
-        minDistance={3.2}
-        maxDistance={7.5}
+        enableZoom={false} // NO ZOOM
+        minDistance={CAM_DIST}
+        maxDistance={CAM_DIST}
         autoRotate={!reduced && !selectedCountry}
-        autoRotateSpeed={0.38}
+        autoRotateSpeed={0.45}
         enableDamping
-        dampingFactor={0.055}
-        rotateSpeed={0.55}
-        zoomSpeed={0.7}
+        dampingFactor={0.06}
+        rotateSpeed={0.5}
+        zoomSpeed={0}
       />
     </>
   );
 }
 
 /* ══════════════════════════════════════════
-   PUBLIC API
+   PUBLIC GLOBE COMPONENT
 ══════════════════════════════════════════ */
 export interface GlobeProps {
   selectedCountry?: any;
@@ -448,22 +930,27 @@ export function Globe({
 
   return (
     <div
-      aria-label="Interactive 3D Globe showing photography locations"
+      aria-label="Interactive 3D Globe"
       role="img"
       style={{ width: "100%", height, position: "relative" }}
+      className="select-none touch-none"
     >
-      {/* Vignette overlay (corners) */}
+      {/* Vignette lighting overlay */}
       <div
         aria-hidden
         style={{
-          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10,
-          background: "radial-gradient(ellipse at center, transparent 55%, oklch(0.145 0 0 / 0.65) 100%)",
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 10,
+          background:
+            "radial-gradient(ellipse at center, transparent 52%, oklch(0.12 0.01 50 / 0.8) 100%)",
         }}
       />
 
       <Canvas
-        camera={{ position: [0, 1.2, CAM_DIST_DEFAULT], fov: 44 }}
-        gl={{ antialias: true, alpha: true }}
+        camera={{ position: [0, 1.0, CAM_DIST], fov: 44 }}
+        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent", touchAction: "none" }}
         onCreated={({ gl }) => {
           gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -479,17 +966,25 @@ export function Globe({
         </Suspense>
       </Canvas>
 
-      {/* Tap hint */}
+      {/* Subtle Hint */}
       <p
         aria-hidden
         style={{
-          position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
-          fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase",
-          color: "oklch(0.7 0.004 85 / 0.45)", fontFamily: "Manrope,sans-serif",
-          pointerEvents: "none", whiteSpace: "nowrap", zIndex: 20,
+          position: "absolute",
+          bottom: 16,
+          left: "50%",
+          transform: "translateX(-50%)",
+          fontSize: 9,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: "rgba(255, 255, 255, 0.4)",
+          fontFamily: "inherit",
+          pointerEvents: "none",
+          whiteSpace: "nowrap",
+          zIndex: 20,
         }}
       >
-        {selectedCountry ? "click marker again to deselect" : "drag · scroll · click marker"}
+        {selectedCountry ? "انقر على المدينة لفتح المعرض" : "اسحب للتدوير · انقر على النقطة للاستكشاف"}
       </p>
     </div>
   );

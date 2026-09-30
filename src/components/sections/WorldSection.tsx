@@ -506,20 +506,18 @@ export function WorldSection() {
           </Reveal>
         </div>
 
-        {/* Globe or Card view */}
+        {/* Interactive 3D Globe on all devices (Mobile & Desktop) */}
         <div className="mt-12">
-          {mounted && !isTouch ? (
-            <div className="relative h-[650px] w-full rounded-sm overflow-hidden border border-border/50 bg-background/50">
+          {mounted ? (
+            <div className="relative h-[480px] sm:h-[580px] md:h-[680px] w-full rounded-sm overflow-hidden border border-border/50 bg-background/50 shadow-2xl">
               <Globe
                 countries={countries}
                 onSelectCountry={(c) => setActiveCountry(c)}
+                height="100%"
               />
             </div>
           ) : (
-            <CountryCards
-              countries={countries}
-              onSelect={(c) => setActiveCountry(c)}
-            />
+            <div className="h-[480px] w-full bg-surface/30 animate-pulse rounded-sm" />
           )}
         </div>
       </div>
