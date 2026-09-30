@@ -33,11 +33,11 @@ export function AdminDashboard() {
   };
 
   const tabs = [
-    { id: "photos" as const, labelAr: "المعرض والصور", labelEn: "Photos", icon: ImageIcon },
-    { id: "campaigns" as const, labelAr: "الحملات والمشاريع", labelEn: "Campaigns", icon: Briefcase },
-    { id: "countries" as const, labelAr: "المدن والمواقع", labelEn: "Locations", icon: MapPin },
-    { id: "social" as const, labelAr: "تابع الرحلة", labelEn: "Social", icon: Instagram },
-    { id: "settings" as const, labelAr: "الإعدادات والبروفايل", labelEn: "Settings", icon: Settings },
+    { id: "photos" as const, labelAr: "المعرض والصور", shortAr: "الصور", labelEn: "Photos", icon: ImageIcon },
+    { id: "campaigns" as const, labelAr: "الحملات والمشاريع", shortAr: "الحملات", labelEn: "Campaigns", icon: Briefcase },
+    { id: "countries" as const, labelAr: "المدن والمواقع", shortAr: "المدن", labelEn: "Locations", icon: MapPin },
+    { id: "social" as const, labelAr: "تابع الرحلة", shortAr: "الرحلة", labelEn: "Social", icon: Instagram },
+    { id: "settings" as const, labelAr: "الإعدادات والبروفايل", shortAr: "الإعدادات", labelEn: "Settings", icon: Settings },
   ];
 
   const tabLabels: Record<string, { en: string; ar: string }> = {
@@ -50,19 +50,17 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
-      {/* Mobile Top Navigation & Header */}
-      <div className="md:hidden sticky top-0 z-30 bg-surface border-b border-border shadow-lg">
+      {/* Mobile Top Navigation & Header - All 5 Tabs Visible */}
+      <div className="md:hidden sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-border shadow-lg">
         {/* Top bar with Brand, View Live Site, and Logout */}
-        <div className="px-4 py-3 flex items-center justify-between border-b border-border/60 bg-surface/95 backdrop-blur-md">
-          <div className="flex items-center gap-2.5">
-            <div>
-              <h1 className="font-display text-lg tracking-wider text-foreground">
-                ALABAD
-              </h1>
-              <p className="type-meta text-accent text-[9px]">
-                لوحة التحكم / Admin
-              </p>
-            </div>
+        <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-border/50">
+          <div>
+            <h1 className="font-display text-base tracking-wider text-foreground">
+              ALABAD
+            </h1>
+            <p className="type-meta text-accent text-[9px] tracking-wide">
+              لوحة التحكم / CMS
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -70,26 +68,26 @@ export function AdminDashboard() {
               href="/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm bg-surface-2 hover:bg-accent/20 text-muted-foreground hover:text-accent type-meta text-[10px] transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded-sm bg-surface-2 hover:bg-accent/20 text-muted-foreground hover:text-accent type-meta text-[10px] transition-colors border border-border/40"
               title="عرض الموقع / View Live Site"
             >
               <span>الموقع</span>
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-2.5 w-2.5" />
             </a>
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm type-meta text-[10px] text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded-sm type-meta text-[10px] text-red-400 bg-red-500/10 hover:bg-red-500/20 hover:text-red-300 transition-colors border border-red-500/20"
               title="تسجيل الخروج / Sign Out"
             >
-              <LogOut className="h-3 w-3" />
+              <LogOut className="h-2.5 w-2.5" />
               <span>خروج</span>
             </button>
           </div>
         </div>
 
-        {/* Horizontal Scrollable Management Tabs */}
-        <nav className="flex items-center gap-1.5 p-2 overflow-x-auto no-scrollbar bg-surface-2/40">
+        {/* 5-Column Responsive All-Visible Tabs Grid */}
+        <nav className="grid grid-cols-5 gap-1 p-1.5 bg-surface-2/30">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -97,18 +95,30 @@ export function AdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-none flex items-center gap-2 px-3.5 py-2 rounded-sm type-meta text-[11px] whitespace-nowrap transition-all duration-300 ${
+                className={`flex flex-col items-center justify-center py-2 px-0.5 rounded-sm text-center transition-all duration-200 min-h-[46px] ${
                   isActive
-                    ? "bg-accent text-background font-semibold shadow-md ring-1 ring-accent"
-                    : "bg-surface text-muted-foreground hover:bg-surface-2 hover:text-foreground border border-border/60"
+                    ? "bg-accent text-background font-semibold shadow-md ring-1 ring-accent scale-[1.02]"
+                    : "bg-surface/70 text-muted-foreground hover:bg-surface hover:text-foreground border border-border/40"
                 }`}
               >
-                <Icon className={`h-3.5 w-3.5 ${isActive ? "text-background" : "text-accent"}`} />
-                <span>{tab.labelAr}</span>
+                <Icon className={`h-4 w-4 mb-0.5 shrink-0 ${isActive ? "text-background" : "text-accent"}`} />
+                <span className="text-[10px] sm:text-[11px] font-medium leading-none tracking-tight truncate max-w-full px-0.5">
+                  {tab.shortAr}
+                </span>
               </button>
             );
           })}
         </nav>
+
+        {/* Active Section Title Header */}
+        <div className="px-3.5 py-2 bg-surface/80 border-t border-border/40 flex items-center justify-between text-xs">
+          <span className="text-muted-foreground text-[11px] font-sans">
+            القسم: <strong className="text-accent font-semibold">{tabLabels[activeTab]?.ar}</strong>
+          </span>
+          <span className="text-[9px] type-meta text-muted-foreground/80">
+            {tabLabels[activeTab]?.en}
+          </span>
+        </div>
       </div>
 
       {/* Desktop Sidebar */}
