@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Instagram } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import { social } from "@/data/social";
+import { AdminLoginModal } from "@/components/AdminLoginModal";
 
 const sections = [
   { id: "home", key: "home" },
@@ -43,6 +44,33 @@ export function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("home");
   const [open, setOpen] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+
+  // Triple click detection on logo for admin access
+  const clickCountRef = useRef(0);
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    clickCountRef.current += 1;
+
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+    }
+
+    if (clickCountRef.current >= 3) {
+      clickCountRef.current = 0;
+      setShowAdminModal(true);
+      return;
+    }
+
+    clickTimerRef.current = setTimeout(() => {
+      if (clickCountRef.current === 1) {
+        go("home");
+      }
+      clickCountRef.current = 0;
+    }, 450);
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -90,11 +118,12 @@ export function Navigation() {
       >
         <nav className="mx-auto grid max-w-[1800px] grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-4 md:px-10">
           <button
-            onClick={() => go("home")}
-            className="min-w-0 text-start"
-            aria-label="ALABAD — home"
+            onClick={handleLogoClick}
+            className="min-w-0 text-start group cursor-pointer select-none"
+            aria-label="ALABAD — home / admin portal"
+            title="ALABAD"
           >
-            <span className="font-display text-xl tracking-[0.3em] text-foreground md:text-2xl">
+            <span className="font-display text-xl tracking-[0.3em] text-foreground md:text-2xl transition-colors duration-200 group-hover:text-accent">
               ALABAD
             </span>
           </button>
@@ -141,6 +170,12 @@ export function Navigation() {
         </nav>
       </header>
 
+      {/* Admin Login Modal (Triggered by 3 clicks on ALABAD logo) */}
+      <AdminLoginModal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+      />
+
       {/* Fullscreen mobile menu */}
       <div
         className={`fixed inset-0 z-[80] flex flex-col bg-background transition-[opacity,clip-path] duration-700 lg:hidden ${
@@ -153,7 +188,12 @@ export function Navigation() {
         aria-hidden={!open}
       >
         <div className="flex items-center justify-between px-5 py-4">
-          <span className="font-display text-xl tracking-[0.3em]">ALABAD</span>
+          <button
+            onClick={handleLogoClick}
+            className="font-display text-xl tracking-[0.3em] text-foreground text-start"
+          >
+            ALABAD
+          </button>
           <button
             onClick={() => setOpen(false)}
             className="type-meta h-11 px-2 text-accent"
