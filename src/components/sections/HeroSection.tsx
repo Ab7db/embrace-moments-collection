@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/lib/i18n";
-import { usePointerParallax, useReducedMotion } from "@/hooks/useMotionPrefs";
+import { useReducedMotion } from "@/hooks/useMotionPrefs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { DbSiteProfile } from "@/lib/database.types";
@@ -11,9 +11,9 @@ import { formatImgUrl } from "@/lib/utils";
 export function HeroSection() {
   const { t, lang } = useLang();
   const reduced = useReducedMotion();
-  const pos = usePointerParallax(!reduced);
   const [loaded, setLoaded] = useState(false);
   const [roleIdx, setRoleIdx] = useState(0);
+  const bgRef = useRef<HTMLDivElement>(null);
 
   // Fetch live site profile for hero customization
   const { data: profile } = useQuery<DbSiteProfile | null>({
@@ -47,16 +47,42 @@ export function HeroSection() {
   const motionStyle = profile?.hero_motion_style || "parallax";
   const heroImageSrc = formatImgUrl(profile?.hero_image_url) || media.hero;
 
-  const getMotionTransform = () => {
-    if (reduced || !motionEnabled || motionStyle === "static") {
-      return undefined;
+  // Zero-rerender smoothed parallax via RAF and direct DOM ref
+  useEffect(() => {
+    if (reduced || !motionEnabled || motionStyle !== "parallax") {
+      if (bgRef.current) {
+        bgRef.current.style.transform = motionStyle === "zoom-slow" ? "scale(1.10)" : "none";
+      }
+      return;
     }
-    if (motionStyle === "zoom-slow") {
-      return "scale(1.10)";
-    }
-    // Parallax default
-    return `translate3d(${pos.x * -intensity}px, ${pos.y * -(intensity * 0.75)}px, 0) scale(1.08)`;
-  };
+    let rafId: number;
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+
+    const onMove = (e: PointerEvent) => {
+      targetX = (e.clientX / window.innerWidth - 0.5) * -intensity;
+      targetY = (e.clientY / window.innerHeight - 0.5) * -(intensity * 0.75);
+    };
+
+    const loop = () => {
+      currentX += (targetX - currentX) * 0.08;
+      currentY += (targetY - currentY) * 0.08;
+      if (bgRef.current) {
+        bgRef.current.style.transform = `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0) scale(1.06)`;
+      }
+      rafId = requestAnimationFrame(loop);
+    };
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+    rafId = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("pointermove", onMove);
+    };
+  }, [reduced, motionEnabled, motionStyle, intensity]);
 
   // Main headline statement
   const headline =
@@ -75,10 +101,10 @@ export function HeroSection() {
     >
       {/* Background image */}
       <div
-        className="absolute inset-0 film-grain"
+        ref={bgRef}
+        className="absolute inset-0 will-change-transform"
         style={{
-          transform: getMotionTransform(),
-          transition: motionStyle === "zoom-slow" ? "transform 8s ease-out" : "transform .12s linear",
+          transition: motionStyle === "zoom-slow" ? "transform 8s ease-out" : "none",
         }}
       >
         <img

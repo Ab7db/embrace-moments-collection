@@ -882,12 +882,29 @@ export function Globe({
   height = "clamp(340px, 48vh, 500px)",
 }: GlobeProps) {
   const mounted = useMounted();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(true);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry) setInView(entry.isIntersecting);
+      },
+      { rootMargin: "150px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   if (!mounted) return null;
 
   const handleSelect = onCountrySelect || onSelectCountry;
 
   return (
     <div
+      ref={containerRef}
       aria-label="Interactive 3D Globe"
       role="img"
       style={{ width: "100%", height, position: "relative" }}
@@ -906,11 +923,12 @@ export function Globe({
       />
 
       <Canvas
+        frameloop={inView ? "always" : "never"}
         camera={{ position: [0, 0.45, CAM_DIST], fov: 38 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent", touchAction: "none" }}
         onCreated={({ gl }) => {
-          gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
           gl.setClearColor(0x000000, 0);
         }}
       >
