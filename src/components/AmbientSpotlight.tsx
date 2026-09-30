@@ -1,112 +1,62 @@
-import { useEffect, useRef } from "react";
-import { useIsTouch, useReducedMotion } from "@/hooks/useMotionPrefs";
+import { useReducedMotion } from "@/hooks/useMotionPrefs";
 
 /**
- * Subtle Golden Spotlight & Lens Glow.
- * A smooth, cinematic golden amber ambient light that drifts behind cards and imagery,
- * dynamically tracking cursor on desktop and gently breathing on mobile/idle for deep 3D atmosphere.
+ * Ambient Golden Waves & Undulating Fluid Glow.
+ * Generates continuous, organic, wavy ambient amber lighting across the background
+ * without any mouse tracking, creating a deep cinematic, living atmosphere.
  */
 export function AmbientSpotlight() {
-  const isTouch = useIsTouch();
   const reduced = useReducedMotion();
-  const lightRef = useRef<HTMLDivElement>(null);
-  const secondaryLightRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (reduced) return;
-
-    let rafId: number;
-    const mouse = {
-      x: window.innerWidth * 0.5,
-      y: window.innerHeight * 0.4,
-      targetX: window.innerWidth * 0.5,
-      targetY: window.innerHeight * 0.4,
-    };
-
-    let time = 0;
-    let isIdle = true;
-    let idleTimer: ReturnType<typeof setTimeout>;
-
-    const handlePointerMove = (e: PointerEvent) => {
-      mouse.targetX = e.clientX;
-      mouse.targetY = e.clientY;
-      isIdle = false;
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
-        isIdle = true;
-      }, 2500);
-    };
-
-    const animate = () => {
-      time += 0.014;
-
-      if (isIdle || isTouch) {
-        // Subtle organic drifting motion when idle or on mobile
-        const orbitRadiusX = window.innerWidth * 0.22;
-        const orbitRadiusY = window.innerHeight * 0.16;
-        const centerX = window.innerWidth * 0.5;
-        const centerY = window.innerHeight * 0.45;
-
-        mouse.targetX =
-          centerX + Math.cos(time * 0.6) * orbitRadiusX + Math.sin(time * 0.25) * 35;
-        mouse.targetY =
-          centerY + Math.sin(time * 0.75) * orbitRadiusY + Math.cos(time * 0.35) * 25;
-      }
-
-      // Smooth physics-based easing (lerp)
-      mouse.x += (mouse.targetX - mouse.x) * 0.055;
-      mouse.y += (mouse.targetY - mouse.y) * 0.055;
-
-      if (lightRef.current) {
-        lightRef.current.style.transform = `translate3d(${mouse.x}px, ${mouse.y}px, 0) translate(-50%, -50%)`;
-      }
-
-      if (secondaryLightRef.current) {
-        const secX = mouse.x + Math.sin(time * 0.5) * 100;
-        const secY = mouse.y + Math.cos(time * 0.5) * 70;
-        secondaryLightRef.current.style.transform = `translate3d(${secX}px, ${secY}px, 0) translate(-50%, -50%)`;
-      }
-
-      rafId = requestAnimationFrame(animate);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    rafId = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("pointermove", handlePointerMove);
-      clearTimeout(idleTimer);
-    };
-  }, [isTouch, reduced]);
 
   if (reduced) return null;
 
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[1] overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-[1] overflow-hidden select-none"
       style={{ mixBlendMode: "screen" }}
     >
-      {/* Primary Subtle Golden Amber Optical Spotlight */}
+      {/* Wave Orb 1: Upper Right to Center Harmonic Drift */}
       <div
-        ref={lightRef}
-        className="absolute left-0 top-0 h-[650px] w-[650px] md:h-[800px] md:w-[800px] rounded-full will-change-transform opacity-90"
+        className="absolute -top-[10%] -end-[10%] h-[550px] w-[550px] sm:h-[750px] sm:w-[750px] lg:h-[900px] lg:w-[900px] rounded-full will-change-transform"
         style={{
           background:
-            "radial-gradient(circle, rgba(232, 184, 75, 0.08) 0%, rgba(196, 154, 69, 0.04) 35%, rgba(180, 130, 40, 0.012) 60%, transparent 75%)",
-          filter: "blur(50px)",
+            "radial-gradient(ellipse at center, rgba(232, 184, 75, 0.085) 0%, rgba(196, 154, 69, 0.04) 40%, rgba(160, 110, 30, 0.01) 65%, transparent 75%)",
+          filter: "blur(70px)",
+          animation: "ambient-wave-1 26s ease-in-out infinite alternate",
         }}
       />
 
-      {/* Secondary Warm Lens Refraction */}
+      {/* Wave Orb 2: Mid-Left Counter-Current Undulating Wave */}
       <div
-        ref={secondaryLightRef}
-        className="absolute left-0 top-0 h-[450px] w-[450px] md:h-[550px] md:w-[550px] rounded-full will-change-transform opacity-60"
+        className="absolute top-[32%] -start-[15%] h-[500px] w-[500px] sm:h-[700px] sm:w-[700px] lg:h-[850px] lg:w-[850px] rounded-full will-change-transform"
         style={{
           background:
-            "radial-gradient(circle, rgba(245, 205, 110, 0.05) 0%, rgba(196, 154, 69, 0.018) 45%, transparent 70%)",
-          filter: "blur(60px)",
+            "radial-gradient(ellipse at center, rgba(245, 205, 110, 0.07) 0%, rgba(196, 154, 69, 0.035) 45%, transparent 70%)",
+          filter: "blur(80px)",
+          animation: "ambient-wave-2 32s ease-in-out infinite alternate-reverse",
+        }}
+      />
+
+      {/* Wave Orb 3: Lower Floating Amber Nebula */}
+      <div
+        className="absolute top-[62%] end-[12%] h-[450px] w-[450px] sm:h-[650px] sm:w-[650px] lg:h-[800px] lg:w-[800px] rounded-full will-change-transform"
+        style={{
+          background:
+            "radial-gradient(circle at center, rgba(212, 160, 50, 0.065) 0%, rgba(180, 130, 40, 0.025) 40%, transparent 68%)",
+          filter: "blur(85px)",
+          animation: "ambient-wave-3 38s ease-in-out infinite alternate",
+        }}
+      />
+
+      {/* Wave Orb 4: Center-Bottom Slow Morphing Caustic */}
+      <div
+        className="absolute top-[48%] start-[28%] h-[400px] w-[400px] sm:h-[600px] sm:w-[600px] lg:h-[750px] lg:w-[750px] rounded-full will-change-transform"
+        style={{
+          background:
+            "radial-gradient(circle at center, rgba(250, 215, 120, 0.055) 0%, rgba(196, 154, 69, 0.02) 50%, transparent 72%)",
+          filter: "blur(90px)",
+          animation: "ambient-wave-4 44s ease-in-out infinite alternate-reverse",
         }}
       />
     </div>
